@@ -3,12 +3,10 @@ name: Cache Dependencies
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:  # Allows manual triggering
+  workflow_dispatch:
 
 jobs:
-  cache-dependencies:
+  cache-test:
     runs-on: ubuntu-latest
     
     steps:
@@ -20,23 +18,27 @@ jobs:
       with:
         python-version: '3.9'
         
-    - name: Cache dependencies
+    - name: Cache Python dependencies
       uses: actions/cache@v4
       id: cache-deps
       with:
         path: |
           ~/.cache/pip
-          **/__pycache__
-        key: cache-2b11042-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
+          ~/.local/lib/python3.9/site-packages
+        key: cache-2b11042-${{ runner.os }}-python-${{ hashFiles('requirements.txt') }}
         restore-keys: |
-          cache-2b11042-${{ runner.os }}-
+          cache-2b11042-${{ runner.os }}-python-
           cache-2b11042-
     
     - name: prime-cache-2b11042
       run: |
+        echo "Cache hit status: ${{ steps.cache-deps.outputs.cache-hit }}"
         if [ "${{ steps.cache-deps.outputs.cache-hit }}" == 'true' ]; then
-          echo "🚀 Cache hit! Dependencies restored from cache."
+          echo "✅ Cache HIT - Dependencies restored from cache"
+          echo "Verifying installed packages:"
+          pip list
         else
-          echo "📦 Cache miss! Installing dependencies fresh..."
+          echo "❌ Cache MISS - Installing dependencies fresh"
           pip install -r requirements.txt
+          echo "Dependencies installed successfully"
         fi
